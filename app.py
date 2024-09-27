@@ -1,6 +1,6 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import mysql.connector
-from flask import request
+
 
 app = Flask(__name__)
 
@@ -38,13 +38,19 @@ def add_song():
     title = data.get('title')
     artist = data.get('artist')
     genre = data.get('genre')
+    album = data.get('album')   # Include album
+    year = data.get('year')     # Include year
 
     try:
         connection = create_db_connection()
         cursor = connection.cursor()
 
-        cursor.execute("INSERT INTO songs (title, artist, genre) VALUES (%s, %s, %s)", 
-                       (title, artist, genre))
+        # Insert all fields including album and year
+        cursor.execute("""
+            INSERT INTO songs (title, artist, genre, album, year) 
+            VALUES (%s, %s, %s, %s, %s)
+        """, (title, artist, genre, album, year))
+        
         connection.commit()
 
         cursor.close()
@@ -54,29 +60,36 @@ def add_song():
     except mysql.connector.Error as err:
         return jsonify({"error": str(err)}), 400
 
+
 @app.route('/songs/<int:song_id>', methods=['PUT'])
 def update_song(song_id):
-    connection = create_db_connection()
-    cursor = connection.cursor()
+    data = request.get_json()  # Use request.get_json() to parse incoming data
 
-    # Get updated song data from the request
-    song_data = request.json
-    title = song_data.get('title')
-    artist = song_data.get('artist')
-    album = song_data.get('album')
-    year = song_data.get('year')
+    title = data.get('title')
+    artist = data.get('artist')
+    album = data.get('album')   # Include album
+    year = data.get('year')     # Include year
 
-    # Update the song in the database
-    cursor.execute("""
-        UPDATE songs
-        SET title = %s, artist = %s, album = %s, year = %s
-        WHERE id = %s
-    """, (title, artist, album, year, song_id))
-    connection.commit()
+    try:
+        connection = create_db_connection()
+        cursor = connection.cursor()
 
-    cursor.close()
-    connection.close()
-    return jsonify({"message": "Song updated successfully!"}), 200
+        # Update all fields including album and year
+        cursor.execute("""
+            UPDATE songs
+            SET title = %s, artist = %s, album = %s, release_year = %s
+            WHERE id = %s
+        """, (title, artist, album, year, song_id))
+        
+        connection.commit()
+
+        cursor.close()
+        connection.close()
+
+        return jsonify({"message": "Song updated successfully!"}), 200
+    except mysql.connector.Error as err:
+        return jsonify({"error": str(err)}), 400
+
 
 @app.route('/songs/<int:song_id>', methods=['DELETE'])
 def delete_song(song_id):

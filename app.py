@@ -78,6 +78,19 @@ def update_song(song_id):
     connection.close()
     return jsonify({"message": "Song updated successfully!"}), 200
 
+@app.route('/songs/<int:song_id>', methods=['DELETE'])
+def delete_song(song_id):
+    connection = create_db_connection()
+    cursor = connection.cursor()
+
+    # Delete the song from the database
+    cursor.execute("DELETE FROM songs WHERE id = %s", (song_id,))
+    connection.commit()
+
+    cursor.close()
+    connection.close()
+    return jsonify({"message": "Song deleted successfully!"}), 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)
